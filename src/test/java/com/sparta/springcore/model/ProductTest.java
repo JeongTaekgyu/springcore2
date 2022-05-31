@@ -1,39 +1,300 @@
 package com.sparta.springcore.model;
 
 import com.sparta.springcore.dto.ProductRequestDto;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class ProductTest {
-    @Test
-    @DisplayName("정상 케이스")
-    void createProduct_Normal() {
-// given - 이 환경이 주어졌을 때
-        Long userId = 100L;
-        String title = "오리온 꼬북칩 초코츄러스맛 160g";
-        String image = "https://shopping-phinf.pstatic.net/main_2416122/24161228524.20200915151118.jpg";
-        String link = "https://search.shopping.naver.com/gate.nhn?id=24161228524";
-        int lprice = 2350;
 
-        ProductRequestDto requestDto = new ProductRequestDto(
-                title,
-                image,
-                link,
-                lprice
-        );
+    @Nested // 테스트결과에 보이는 창에 한 뎁스 들어가게 해주는 코드
+    @DisplayName("회원이 요청한 관심상품 객체 생성")
+    class CreateUserProduct {
+
+        private Long userId;
+        private String title;
+        private String image;
+        private String link;
+        private int lprice;
+
+        @BeforeEach // @BeforeEach를 수행하고 나서 @Test를 시작한다.
+        void setup() {
+            userId = 100L;
+            title = "오리온 꼬북칩 초코츄러스맛 160g";
+            image = "https://shopping-phinf.pstatic.net/main_2416122/24161228524.20200915151118.jpg";
+            link = "https://search.shopping.naver.com/gate.nhn?id=24161228524";
+            lprice = 2350;
+        }
+
+        @Test
+        @DisplayName("정상 케이스")
+        void createProduct_Normal() {
+// given
+            ProductRequestDto requestDto = new ProductRequestDto(
+                    title,
+                    image,
+                    link,
+                    lprice
+            );
+
+// when
+            Product product = new Product(requestDto, userId);
+
+// then
+            assertNull(product.getId());
+            assertEquals(userId, product.getUserId());
+            assertEquals(title, product.getTitle());
+            assertEquals(image, product.getImage());
+            assertEquals(link, product.getLink());
+            assertEquals(lprice, product.getLprice());
+            assertEquals(0, product.getMyprice());
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class FailCases {
+            @Nested
+            @DisplayName("회원 Id")
+            class userId {
+                @Test
+                @DisplayName("null")
+                void fail1() {
+// given - 이 환경이 주어졌을 때
+                    userId = null;
+
+                    ProductRequestDto requestDto = new ProductRequestDto(
+                            title,
+                            image,
+                            link,
+                            lprice
+                    );
 
 // when - 이 코드가 실행된 결과를 써서 -> then 처럼 되야한다.
-        Product product = new Product(requestDto, userId);
+                    // 에러가 발생해야한다.
+                    Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+                        new Product(requestDto, userId);
+                    });
 
 // then - 이렇게 되야한다.
-        assertNull(product.getId());
-        assertEquals(userId, product.getUserId());
-        assertEquals(title, product.getTitle());
-        assertEquals(image, product.getImage());
-        assertEquals(link, product.getLink());
-        assertEquals(lprice, product.getLprice());
-        assertEquals(0, product.getMyprice());
+                    // 메시지를 바꾸면 테스트코드를 계속 바꿔줘야하기 떄문에 그렇게 좋은 코드는 아니다.
+                    // 그러므로 IllegalArgumentException으로 통일하지 말고 InvalidUserIDValidation 처럼 exception 을 따로 만들어라
+                    assertEquals("회원 Id 가 유효하지 않습니다.", exception.getMessage());
+                }
+
+                @Test
+                @DisplayName("마이너스")
+                void fail2() {
+// given
+                    userId = -100L;
+
+                    ProductRequestDto requestDto = new ProductRequestDto(
+                            title,
+                            image,
+                            link,
+                            lprice
+                    );
+
+// when
+                    Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+                        new Product(requestDto, userId);
+                    });
+
+// then
+                    assertEquals("회원 Id 가 유효하지 않습니다.", exception.getMessage());
+                }
+            }
+
+            @Nested
+            @DisplayName("상품명")
+            class Title {
+                @Test
+                @DisplayName("null")
+                void fail1() {
+// given
+                    title = null;
+
+                    ProductRequestDto requestDto = new ProductRequestDto(
+                            title,
+                            image,
+                            link,
+                            lprice
+                    );
+
+// when
+                    Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+                        new Product(requestDto, userId);
+                    });
+
+// then
+                    assertEquals("저장할 수 있는 상품명이 없습니다.", exception.getMessage());
+                }
+
+                @Test
+                @DisplayName("빈 문자열")
+                void fail2() {
+// given
+                    String title = "";
+
+                    ProductRequestDto requestDto = new ProductRequestDto(
+                            title,
+                            image,
+                            link,
+                            lprice
+                    );
+
+// when
+                    Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+                        new Product(requestDto, userId);
+                    });
+
+// then
+                    assertEquals("저장할 수 있는 상품명이 없습니다.", exception.getMessage());
+                }
+            }
+
+            @Nested
+            @DisplayName("상품 이미지 URL")
+            class Image {
+                @Test
+                @DisplayName("null")
+                void fail1() {
+// given
+                    image = null;
+
+                    ProductRequestDto requestDto = new ProductRequestDto(
+                            title,
+                            image,
+                            link,
+                            lprice
+                    );
+
+// when
+                    Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+                        new Product(requestDto, userId);
+                    });
+
+// then
+                    assertEquals("상품 이미지 URL 포맷이 맞지 않습니다.", exception.getMessage());
+                }
+
+                @Test
+                @DisplayName("URL 포맷 형태가 맞지 않음")
+                void fail2() {
+// given
+                    image = "shopping-phinf.pstatic.net/main_2416122/24161228524.20200915151118.jpg";
+
+                    ProductRequestDto requestDto = new ProductRequestDto(
+                            title,
+                            image,
+                            link,
+                            lprice
+                    );
+
+// when
+                    Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+                        new Product(requestDto, userId);
+                    });
+
+// then
+                    assertEquals("상품 이미지 URL 포맷이 맞지 않습니다.", exception.getMessage());
+                }
+            }
+
+            @Nested
+            @DisplayName("상품 최저가 페이지 URL")
+            class Link {
+                @Test
+                @DisplayName("null")
+                void fail1() {
+// given
+                    link = "https";
+
+                    ProductRequestDto requestDto = new ProductRequestDto(
+                            title,
+                            image,
+                            link,
+                            lprice
+                    );
+
+// when
+                    Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+                        new Product(requestDto, userId);
+                    });
+
+// then
+                    assertEquals("상품 최저가 페이지 URL 포맷이 맞지 않습니다.", exception.getMessage());
+                }
+
+                @Test
+                @DisplayName("URL 포맷 형태가 맞지 않음")
+                void fail2() {
+// given
+                    link = "https";
+
+                    ProductRequestDto requestDto = new ProductRequestDto(
+                            title,
+                            image,
+                            link,
+                            lprice
+                    );
+
+// when
+                    Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+                        new Product(requestDto, userId);
+                    });
+
+// then
+                    assertEquals("상품 최저가 페이지 URL 포맷이 맞지 않습니다.", exception.getMessage());
+                }
+            }
+
+            @Nested
+            @DisplayName("상품 최저가")
+            class LowPrice {
+                @Test
+                @DisplayName("0")
+                void fail1() {
+// given
+                    lprice = 0;
+
+                    ProductRequestDto requestDto = new ProductRequestDto(
+                            title,
+                            image,
+                            link,
+                            lprice
+                    );
+
+// when
+                    Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+                        new Product(requestDto, userId);
+                    });
+
+// then
+                    assertEquals("상품 최저가가 0 이하입니다.", exception.getMessage());
+                }
+
+                @Test
+                @DisplayName("음수")
+                void fail2() {
+// given
+                    lprice = -1500;
+
+                    ProductRequestDto requestDto = new ProductRequestDto(
+                            title,
+                            image,
+                            link,
+                            lprice
+                    );
+
+// when
+                    Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+                        new Product(requestDto, userId);
+                    });
+
+// then
+                    assertEquals("상품 최저가가 0 이하입니다.", exception.getMessage());
+                }
+            }
+        }
     }
 }
